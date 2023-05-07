@@ -1,0 +1,84 @@
+echo "# emg-reporter" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git branch -M main
+git remote add origin https://github.com/mariosato/emg-reporter.git
+git push -u origin main
+
+import os
+import docx
+import openpyxl as xl
+from tkinter import filedialog
+from tkinter import Tk
+
+def buscar_frase_en_archivos(frases_buscadas):
+    archivo_word = obtener_archivo_word()
+    resultados = {}
+
+    texto = leer_archivo_word(archivo_word)
+
+    for frase_buscada in frases_buscadas:
+        if frase_buscada in texto:
+            if "derecho" in frase_buscada or "izquierdo" in frase_buscada:
+                lado = obtener_lado(frase_buscada)
+                resultado = f"{frase_buscada} bilateral"
+                resultados[resultado] = "Sí" if lado in texto else "No"
+            else:
+                resultados[frase_buscada] = "Sí"
+        else:
+            resultados[frase_buscada] = "No"
+
+    crear_archivo_excel(archivo_word, resultados)
+
+def obtener_lado(frase):
+    if "derecho" in frase:
+        return "derecho"
+    elif "izquierdo" in frase:
+        return "izquierdo"
+    else:
+        return ""
+
+def obtener_archivo_word():
+    root = Tk()
+    root.withdraw()
+    archivo_word = filedialog.askopenfilename(title="Selecciona un archivo Word", filetypes=[("Archivos de Word", "*.docx")])
+    return archivo_word
+
+def leer_archivo_word(ruta):
+    doc = docx.Document(ruta)
+    texto = ""
+
+    for paragraph in doc.paragraphs:
+        texto += paragraph.text + " "
+
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                texto += cell.text + " "
+
+    return texto
+
+def crear_archivo_excel(archivo_word, resultados):
+    nombre_archivo = os.path.splitext(os.path.basename(archivo_word))[0]
+    libro_excel = xl.Workbook()
+    hoja = libro_excel.active
+
+    for resultado, valor in resultados.items():
+        hoja.append([resultado, valor])
+
+    ruta_excel = os.path.join(os.path.dirname(archivo_word), nombre_archivo + ".xlsx")
+    libro_excel.save(ruta_excel)
+    print("Se ha creado el archivo de Excel en:", ruta_excel)
+
+# Nuevas frases buscadas
+frases_buscadas = [
+    "sural izquierdo",
+    "sural derecho",
+    "peroneo superficial derecho",
+    "peroneo superficial izquierdo",
+    "safeno derecho",
+    "safeno izquierdo"
+]
+
+buscar_frase_en_archivos(frases_buscadas)
